@@ -377,6 +377,14 @@ class ElfReaderImpl {
     delete [] program_headers_;
   }
 
+  uint32_t Machine() const {
+    return header_.e_machine;
+  }
+
+  const unsigned char *Ident() const {
+    return header_.e_ident;
+  }
+
   // Examine the headers of the file and return whether the file looks
   // like an ELF file for this architecture. Takes an already-open
   // file descriptor for the candidate file, reading in the prologue
@@ -1217,6 +1225,24 @@ bool ElfReader::IsDynamicSharedObject() {
   } else {
     return false;
   }
+}
+
+uint32_t ElfReader::Machine() {
+  if (IsElf32File()) {
+    return GetImpl32()->Machine();
+  } else if (IsElf64File()) {
+    return GetImpl64()->Machine();
+  }
+  return 0;
+}
+
+const unsigned char *ElfReader::Ident() {
+  if (IsElf32File()) {
+    return GetImpl32()->Ident();
+  } else if (IsElf64File()) {
+    return GetImpl64()->Ident();
+  }
+  return NULL;
 }
 
 ElfReaderImpl<Elf32> *ElfReader::GetImpl32() {

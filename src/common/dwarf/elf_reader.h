@@ -51,6 +51,12 @@ class ElfReader {
   // Checks if it's an ELF file of type ET_DYN (shared object file).
   bool IsDynamicSharedObject();
 
+  // Returns the e_machine field from the ELF header
+  uint32 Machine();
+
+  // Returns the e_ident field from the ELF header
+  const unsigned char *Ident();
+
   // Add symbols in the given ELF file into the provided SymbolMap,
   // assuming that the file has been loaded into the specified
   // offset.
