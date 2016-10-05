@@ -98,6 +98,10 @@ class ElfReader {
   // shared libraries and position-independent executables.
   uint64 VaddrOfFirstLoadSegment();
 
+  // Return newly-allocated buffer with a copy of the first program segment of
+  // the given type
+  char *GetSegmentByType(uint32_t type, size_t *size);
+
   // Return the name of section "shndx".  Returns NULL if the section
   // is not found.
   const char *GetSectionName(int shndx);

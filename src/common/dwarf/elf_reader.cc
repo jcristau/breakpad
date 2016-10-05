@@ -823,6 +823,29 @@ class ElfReaderImpl {
     return header_.e_shnum;
   }
 
+  char *GetSegmentByType(uint32_t type, size_t *size) {
+    for (int i = 0; i < GetNumProgramHeaders(); i++) {
+      typename ElfArch::Phdr *phdr = &program_headers_[i];
+      if (phdr->p_type == type) {
+        if (phdr->p_filesz > (uint64_t)(size_t)-1) {
+          // 64bit ELF file on 32bit?
+          return NULL;
+        }
+        *size = program_headers_[i].p_filesz;
+        char *segment = new char[*size];
+        if (!segment)
+          return NULL;
+        ssize_t ret = pread(fd_, segment, *size, program_headers_[i].p_offset);
+        if (ret < 0 || (size_t)ret != *size) {
+          delete[] segment;
+          return NULL;
+        }
+        return segment;
+      }
+    }
+    return NULL;
+  }
+
  private:
   typedef vector<pair<uint64, const typename ElfArch::Sym *> > AddrToSymMap;
 
@@ -1159,6 +1182,15 @@ uint64 ElfReader::VaddrOfFirstLoadSegment() {
   } else {
     return 0;
   }
+}
+
+char *ElfReader::GetSegmentByType(uint32_t type, size_t *size) {
+  if (IsElf32File()) {
+    return GetImpl32()->GetSegmentByType(type, size);
+  } else if (IsElf64File()) {
+    return GetImpl64()->GetSegmentByType(type, size);
+  }
+  return NULL;
 }
 
 const char *ElfReader::GetSectionName(int shndx) {
