@@ -37,6 +37,7 @@
 #include <fcntl.h>
 #include <string.h>
 
+#include <cassert>
 #include <algorithm>
 #include <map>
 #include <string>
@@ -931,9 +932,14 @@ class ElfReaderImpl {
 
     // Dynamically allocate enough space to store the program headers
     // and read them out of the file.
-    //const int program_headers_size =
-    //    GetNumProgramHeaders() * sizeof(*program_headers_);
+    const int program_headers_size =
+        GetNumProgramHeaders() * sizeof(*program_headers_);
+    assert(sizeof(*program_headers_) == header_.e_phentsize);
     program_headers_ = new typename ElfArch::Phdr[GetNumProgramHeaders()];
+    if (pread(fd, program_headers_, program_headers_size, header_.e_phoff) !=
+        program_headers_size) {
+      return false;
+    }
 
     // Presize the sections array for efficiency.
     sections_.resize(GetNumSections(), NULL);
