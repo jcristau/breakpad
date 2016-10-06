@@ -78,6 +78,16 @@ AC_CHECK_HEADERS([a.out.h])
 
 m4_include(m4/ax_cxx_compile_stdcxx.m4)
 AX_CXX_COMPILE_STDCXX(11, noext, mandatory)
+m4_include(m4/ax_check_zlib.m4)
+AX_CHECK_ZLIB([
+  AC_DEFINE([HAVE_LIBZ], [1], [Define to 1 if you have `z' library (-lz)])
+  LIBZ_LIBS="-lz"
+  LIBZ_LDFLAGS="-L${ZLIB_HOME}/lib"
+  LIBZ_CPPFLAGS="-I${ZLIB_HOME}/include"
+])
+AC_SUBST([LIBZ_LIBS])
+AC_SUBST([LIBZ_LDFLAGS])
+AC_SUBST([LIBZ_CPPFLAGS])
 
 # Only build Linux client libs when compiling for Linux
 case $host in

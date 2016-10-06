@@ -30,6 +30,8 @@
 #define _GNU_SOURCE  // needed for pread()
 #endif
 
+#include "config.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -42,9 +44,9 @@
 #include <map>
 #include <string>
 #include <vector>
-// TODO(saugustine): Add support for compressed debug.
-// Also need to add configure tests for zlib.
-//#include "zlib.h"
+#ifdef HAVE_LIBZ
+#include <zlib.h>
+#endif
 
 #include "third_party/musl/include/elf.h"
 #include "elf_reader.h"
@@ -121,6 +123,7 @@ class Elf32 {
   typedef Elf32_Ehdr Ehdr;
   typedef Elf32_Shdr Shdr;
   typedef Elf32_Phdr Phdr;
+  typedef Elf32_Chdr Chdr;
   typedef Elf32_Word Word;
   typedef Elf32_Sym Sym;
   typedef Elf32_Rel Rel;
@@ -150,6 +153,7 @@ class Elf64 {
   typedef Elf64_Ehdr Ehdr;
   typedef Elf64_Shdr Shdr;
   typedef Elf64_Phdr Phdr;
+  typedef Elf64_Chdr Chdr;
   typedef Elf64_Word Word;
   typedef Elf64_Sym Sym;
   typedef Elf64_Rel Rel;
@@ -203,10 +207,7 @@ class ElfSectionReader {
                 (header_.sh_offset - offset_aligned);
 
     // Check for and handle any compressed contents.
-    //if (strncmp(name, ".zdebug_", strlen(".zdebug_")) == 0)
-    //  DecompressZlibContents();
-    // TODO(saugustine): Add support for proposed elf-section flag
-    // "SHF_COMPRESS".
+    DecompressZlibContents();
   }
 
   ~ElfSectionReader() {
@@ -214,6 +215,40 @@ class ElfSectionReader {
       munmap(contents_aligned_, size_aligned_);
     else
       delete[] contents_;
+  }
+
+  void DecompressZlibContents() {
+#ifdef HAVE_LIBZ
+    if (!(header_.sh_flags & SHF_COMPRESSED))
+      return;
+    typename ElfArch::Chdr *chdr = reinterpret_cast<typename ElfArch::Chdr *>(contents_);
+    if (section_size_ < sizeof(*chdr))
+      return;
+    if (chdr->ch_type != ELFCOMPRESS_ZLIB)
+      return;
+    unsigned char *compressed_contents = (unsigned char *)contents_ + sizeof(*chdr);
+    char *uncompressed_contents = new char[chdr->ch_size];
+    if (!uncompressed_contents)
+      return;
+    z_stream zstrm;
+    memset(&zstrm, 0, sizeof(zstrm));
+    zstrm.avail_in = section_size_ - sizeof(*chdr);
+    zstrm.next_in = compressed_contents;
+    zstrm.avail_out = chdr->ch_size;
+    zstrm.next_out = reinterpret_cast<unsigned char *>(uncompressed_contents);
+    int rc = inflateInit(&zstrm);
+    while (zstrm.avail_in > 0 && zstrm.avail_out > 0 && rc == Z_OK)
+      rc = inflate(&zstrm, Z_FINISH);
+    inflateEnd(&zstrm);
+    if (rc != Z_STREAM_END) {
+      delete[] uncompressed_contents;
+      return;
+    }
+    section_size_ = chdr->ch_size;
+    munmap(contents_aligned_, size_aligned_);
+    contents_aligned_ = NULL;
+    contents_ = uncompressed_contents;
+#endif
   }
 
   // Return the section header for this section.

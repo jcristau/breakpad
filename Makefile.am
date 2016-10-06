@@ -593,6 +593,14 @@ src_tools_linux_dump_syms_dump_syms_SOURCES = \
 	src/common/linux/memory_mapped_file.cc \
 	src/common/linux/safe_readlink.cc \
 	src/tools/linux/dump_syms/dump_syms.cc
+src_tools_linux_dump_syms_dump_syms_CPPFLAGS = \
+	$(AM_CPPFLAGS) \
+	$(LIBZ_CPPFLAGS)
+src_tools_linux_dump_syms_dump_syms_LDFLAGS = \
+	$(AM_LDFLAGS) \
+	$(LIBZ_LDFLAGS)
+src_tools_linux_dump_syms_dump_syms_LDADD = \
+	$(LIBZ_LIBS)
 
 src_tools_linux_md2core_minidump_2_core_SOURCES = \
 	src/common/linux/memory_mapped_file.cc \
@@ -639,9 +647,16 @@ src_tools_mac_dump_syms_dump_syms_mac_SOURCES = \
 	src/common/mac/macho_walker.cc \
 	src/common/mac/macho_walker.h \
 	src/tools/mac/dump_syms/dump_syms_tool.cc
-src_tools_mac_dump_syms_dump_syms_mac_CXXFLAGS= \
+src_tools_mac_dump_syms_dump_syms_mac_CPPFLAGS= \
+	$(AM_CPPFLAGS) \
 	-I$(top_srcdir)/src/third_party/mac_headers \
-	-DHAVE_MACH_O_NLIST_H
+	-DHAVE_MACH_O_NLIST_H \
+	$(LIBZ_CPPFLAGS)
+src_tools_mac_dump_syms_dump_syms_mac_LDFLAGS = \
+	$(AM_LDFLAGS) \
+	$(LIBZ_LDFLAGS)
+src_tools_mac_dump_syms_dump_syms_mac_LDADD = \
+	$(LIBZ_LIBS)
 
 src_common_dumper_unittest_SOURCES = \
 	src/common/byte_cursor_unittest.cc \
@@ -698,10 +713,13 @@ src_common_dumper_unittest_SOURCES = \
 	src/common/tests/file_utils.cc
 src_common_dumper_unittest_CPPFLAGS = \
 	$(AM_CPPFLAGS) $(TEST_CFLAGS) \
-	$(PTHREAD_CFLAGS)
+	$(PTHREAD_CFLAGS) $(LIBZ_CPPFLAGS)
+src_common_dumper_unittest_LDFLAGS = \
+	$(LIBZ_LDFLAGS)
 src_common_dumper_unittest_LDADD = \
 	$(TEST_LIBS) \
-	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
+	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS) \
+	$(LIBZ_LIBS)
 
 src_common_mac_macho_reader_unittest_SOURCES = \
 	src/common/dwarf_cfi_to_module.cc \
@@ -730,9 +748,13 @@ src_common_mac_macho_reader_unittest_CPPFLAGS = \
 	$(AM_CPPFLAGS) $(TEST_CFLAGS) \
 	-I$(top_srcdir)/src/third_party/mac_headers \
 	-DHAVE_MACH_O_NLIST_H \
+	$(LIBZ_CPPFLAGS) \
 	$(PTHREAD_CFLAGS)
+src_common_mac_macho_reader_unittest_LDFLAGS = \
+	$(LIBZ_LDFLAGS)
 src_common_mac_macho_reader_unittest_LDADD = \
 	$(TEST_LIBS) \
+	$(LIBZ_LIBS) \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 endif
 
