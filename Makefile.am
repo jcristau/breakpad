@@ -184,6 +184,8 @@ src_client_linux_libbreakpad_client_a_SOURCES = \
 	src/common/md5.h \
 	src/common/string_conversion.cc \
 	src/common/string_conversion.h \
+	src/common/dwarf/elf_reader.cc \
+	src/common/dwarf/elf_reader.h \
 	src/common/linux/elf_core_dump.cc \
 	src/common/linux/elfutils.cc \
 	src/common/linux/elfutils.h \
@@ -524,6 +526,7 @@ src_client_linux_linux_client_unittest_shlib_LDADD = \
 	src/client/minidump_file_writer.o \
 	src/common/convert_UTF.o \
 	src/common/md5.o \
+	src/common/dwarf/elf_reader.o \
 	src/common/linux/elfutils.o \
 	src/common/linux/file_id.o \
 	src/common/linux/guid_creator.o \
@@ -532,6 +535,7 @@ src_client_linux_linux_client_unittest_shlib_LDADD = \
 	src/common/linux/safe_readlink.o \
 	src/common/string_conversion.o \
 	$(TEST_LIBS) \
+	$(LIBZ_LIBS) \
 	$(PTHREAD_CFLAGS) $(PTHREAD_LIBS)
 if ANDROID_HOST
 src_client_linux_linux_client_unittest_shlib_SOURCES += \

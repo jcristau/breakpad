@@ -38,6 +38,7 @@
 
 #include "common/linux/guid_creator.h"
 #include "common/memory.h"
+#include "common/dwarf/elf_reader.h"
 
 namespace google_breakpad {
 
@@ -65,6 +66,13 @@ class FileID {
   // file.
   static bool ElfFileIdentifierFromMappedFile(
       const void* base,
+      wasteful_vector<uint8_t>& identifier);
+
+  // Load the identifier for the elf file represented by |reader| into
+  // |identifier|. Return false if the identifier could not be created for this
+  // file.
+  static bool ElfFileIdentifierFromReader(
+      dwarf2reader::ElfReader& reader,
       wasteful_vector<uint8_t>& identifier);
 
   // Convert the |identifier| data to a string.  The string will

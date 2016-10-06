@@ -117,19 +117,39 @@ static bool FindElfBuildIDNote(const void* elf_mapped_base,
   return false;
 }
 
-// Attempt to locate the .text section of an ELF binary and generate
-// a simple hash by XORing the first page worth of bytes into |identifier|.
-static bool HashElfTextSection(const void* elf_mapped_base,
+static bool FindElfBuildIDNote(dwarf2reader::ElfReader& reader,
                                wasteful_vector<uint8_t>& identifier) {
-  identifier.resize(kMDGUIDSize);
+  const void *note_section;
+  char *note_segment = NULL;
+  size_t note_size;
+  bool ret;
 
-  void* text_section;
-  size_t text_size;
-  if (!FindElfSection(elf_mapped_base, ".text", SHT_PROGBITS,
-                      (const void**)&text_section, &text_size, NULL) ||
-      text_size == 0) {
+  note_segment = reader.GetSegmentByType(PT_NOTE, &note_size);
+  if (note_segment && note_size)
+    note_section = note_segment;
+  else
+    note_section = reader.GetSectionByName(".note.gnu.build-id", &note_size);
+  if (!note_section || !note_size) {
+    delete[] note_segment;
     return false;
   }
+
+  if (reader.IsElf32File()) {
+    ret = ElfClassBuildIDNoteIdentifier<ElfClass32>(note_section, note_size,
+                                                     identifier);
+  } else if (reader.IsElf64File()) {
+    ret = ElfClassBuildIDNoteIdentifier<ElfClass64>(note_section, note_size,
+                                                     identifier);
+  }
+  delete[] note_segment;
+  return ret;
+}
+
+// Attempt to locate the .text section of an ELF binary and generate
+// a simple hash by XORing the first page worth of bytes into |identifier|.
+static bool HashElfTextSection(const void *text_section, size_t text_size,
+                               wasteful_vector<uint8_t>& identifier) {
+  identifier.resize(kMDGUIDSize);
 
   // Only provide |kMDGUIDSize| bytes to keep identifiers produced by this
   // function backwards-compatible.
@@ -152,7 +172,14 @@ bool FileID::ElfFileIdentifierFromMappedFile(const void* base,
     return true;
 
   // Fall back on hashing the first page of the text section.
-  return HashElfTextSection(base, identifier);
+  const void* text_section;
+  size_t text_size;
+  if (!FindElfSection(base, ".text", SHT_PROGBITS,
+                      (const void**)&text_section, &text_size, NULL) ||
+      text_size == 0) {
+    return false;
+  }
+  return HashElfTextSection(text_section, text_size, identifier);
 }
 
 bool FileID::ElfFileIdentifier(wasteful_vector<uint8_t>& identifier) {
@@ -161,6 +188,20 @@ bool FileID::ElfFileIdentifier(wasteful_vector<uint8_t>& identifier) {
     return false;
 
   return ElfFileIdentifierFromMappedFile(mapped_file.data(), identifier);
+}
+
+bool FileID::ElfFileIdentifierFromReader(dwarf2reader::ElfReader& reader,
+		                         wasteful_vector<uint8_t>& identifier) {
+  // Look for a build id note first.
+  if (FindElfBuildIDNote(reader, identifier))
+    return true;
+
+  // Fall back on hashing the first page of the text section.
+  size_t text_size;
+  const char *text_section = reader.GetSectionByName(".text", &text_size);
+  if (!text_section)
+    return false;
+  return HashElfTextSection(text_section, text_size, identifier);
 }
 
 // These three functions are not ever called in an unsafe context, so it's OK
